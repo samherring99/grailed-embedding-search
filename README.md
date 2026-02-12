@@ -14,23 +14,46 @@ Search by **image URL** or **text description** to find visually similar product
 ## Setup
 
 ```bash
-# Clone and install
 git clone https://github.com/samherring99/grailed-embedding-search.git
 cd grailed-embedding-search
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
 ## Usage
 
+### CLI
+
+```bash
+# Index 200 listings
+python cli.py index --count 200
+
+# Index and save to disk for later
+python cli.py index --count 500 --save ./my_index
+
+# Search by text
+python cli.py search --text "vintage black leather jacket" --load ./my_index
+
+# Search by image URL
+python cli.py search --image "https://example.com/jacket.jpg" --load ./my_index
+
+# Verbose / debug output
+python cli.py -v search --text "patchwork denim" --load ./my_index
+```
+
+### Python API
+
 ```python
 from embeddings import SimilaritySearch
 
-# Initialize (loads CLIP model)
 searcher = SimilaritySearch()
 
-# Fetch and index products from Grailed
+# Fetch and index products (uses batch embedding)
 products = searcher.grailed_client.find_products(hits_per_page=200)
 searcher.index_products(products)
+
+# Save for later reuse
+searcher.save_index("./grailed_index")
 
 # Search by image
 results = searcher.find_similar_products(
@@ -42,8 +65,21 @@ results = searcher.find_similar_products(
     query_text="vintage black leather jacket"
 )
 
+# Quick search without fetching full product details
+results = searcher.find_similar_products(
+    query_text="rick owens geobasket", fetch_details=False
+)
+
 for r in results:
-    print(f"{r['product']['title']} — similarity: {r['similarity_score']:.3f}")
+    print(f"{r['product_id']} — similarity: {r['similarity_score']:.3f}")
+```
+
+### Loading a saved index
+
+```python
+searcher = SimilaritySearch()
+searcher.load_index("./grailed_index")
+results = searcher.find_similar_products(query_text="oversized hoodie")
 ```
 
 ## Project Structure
@@ -51,18 +87,18 @@ for r in results:
 ```
 embeddings/
 ├── __init__.py             # Public API exports
-├── embedding_model.py      # CLIP-based image & text embedding
-├── vector_store.py         # FAISS index wrapper
+├── embedding_model.py      # CLIP-based image & text embedding (single + batch)
+├── vector_store.py         # FAISS index wrapper with save/load
 └── similarity_search.py    # High-level search orchestrator
+cli.py                      # Command-line interface
 similarity.py               # Example usage script
 ```
 
 ## TODO
 
-- [ ] Persistent vector store (save/load FAISS index to disk)
-- [ ] Embedding cache (avoid re-embedding known products)
-- [ ] Rate limiting for Grailed API calls
-- [ ] Async embedding pipeline for faster indexing
-- [ ] Search result visualization (matplotlib grid)
-- [ ] CLI interface
+- [ ] Embedding cache (avoid re-embedding known product URLs)
+- [ ] Async/threaded image downloads for faster batch indexing
+- [ ] Search result visualization (matplotlib grid of cover photos)
+- [ ] Filter by category, designer, price range before search
+- [ ] Web UI (Gradio or Streamlit)
 
