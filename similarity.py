@@ -1,26 +1,35 @@
-from embeddings.similarity_search import SimilaritySearch
+"""Example: index Grailed listings and search by image or text.
+
+For a more complete interface see ``cli.py``.
+"""
+import logging
+
+from embeddings import SimilaritySearch
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
 # Initialize
 searcher = SimilaritySearch()
 
-# Get some products to index
+# Fetch & index products (uses batch embedding under the hood)
 products = searcher.grailed_client.find_products(hits_per_page=200)
-
-# Index the products
 searcher.index_products(products)
 
-# Find similar products by image
-similar_products = searcher.find_similar_products(
+# Optionally save the index for later reuse
+# searcher.save_index("./grailed_index")
+
+# Search by image
+results = searcher.find_similar_products(
     query_image="https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Checkerboard_pattern.svg/480px-Checkerboard_pattern.svg.png"
 )
 
-# Or find similar products by text description
-# similar_products = searcher.find_similar_products(
+# Or search by text description
+# results = searcher.find_similar_products(
 #     query_text="psychedelic yet structured high-contrast monochrome"
 # )
 
-for p in similar_products:
-    print(p['product']['title'])
-    print("Similarity:" + str(p['similarity_score']))
-    for pic in p['product']['photos'][:2]:
-        print(pic['url'])
+for r in results:
+    product = r["product"]
+    print(f"{product['title']}  —  similarity: {r['similarity_score']:.3f}")
+    for pic in product.get("photos", [])[:2]:
+        print(f"  {pic['url']}")
