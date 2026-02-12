@@ -1,0 +1,9 @@
+torch>=2.0.0
+torchvision>=0.15.0
+Pillow>=9.0.0
+requests>=2.28.0
+numpy>=1.24.0
+faiss-cpu>=1.7.4
+git+https://github.com/openai/CLIP.git
+grailed-api>=0.3.0
+
