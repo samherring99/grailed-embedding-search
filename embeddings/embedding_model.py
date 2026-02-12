@@ -10,6 +10,10 @@ from PIL import Image
 
 logger = logging.getLogger(__name__)
 
+_HTTP_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (compatible; GrailedEmbeddingSearch/1.0)"
+}
+
 
 class ProductEmbeddingModel:
     """CLIP-based embedding model for images and text.
@@ -31,11 +35,14 @@ class ProductEmbeddingModel:
     # ------------------------------------------------------------------
 
     def get_image_embedding(self, image_url: str) -> Optional[np.ndarray]:
-        """Return a (1, 512) embedding for an image URL, or *None* on failure."""
+        """Return a (1, 512) embedding for an image URL or local path, or *None* on failure."""
         try:
-            response = requests.get(image_url, timeout=10)
-            response.raise_for_status()
-            image = Image.open(BytesIO(response.content)).convert("RGB")
+            if image_url.startswith(("http://", "https://")):
+                response = requests.get(image_url, timeout=10, headers=_HTTP_HEADERS)
+                response.raise_for_status()
+                image = Image.open(BytesIO(response.content)).convert("RGB")
+            else:
+                image = Image.open(image_url).convert("RGB")
             tensor = self.preprocess(image).unsqueeze(0).to(self.device)
 
             with torch.no_grad():
@@ -81,7 +88,7 @@ class ProductEmbeddingModel:
 
         for i, url in enumerate(image_urls):
             try:
-                resp = requests.get(url, timeout=10)
+                resp = requests.get(url, timeout=10, headers=_HTTP_HEADERS)
                 resp.raise_for_status()
                 img = Image.open(BytesIO(resp.content)).convert("RGB")
                 batch_tensors.append(self.preprocess(img))
@@ -114,5 +121,9 @@ class ProductEmbeddingModel:
         with torch.no_grad():
             features = self.model.encode_image(batch)
         return features.cpu().numpy()
+
+
+
+
 
 

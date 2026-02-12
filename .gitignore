@@ -23,8 +23,10 @@ data/
 *.npy
 *.index
 *.db
+grailed_index/
 
 # OS
 .DS_Store
 Thumbs.db
+
 
