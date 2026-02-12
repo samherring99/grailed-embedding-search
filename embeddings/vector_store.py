@@ -34,6 +34,3 @@ class VectorStore:
                 results.append((self.id_to_product[idx], float(score)))
                 
         return results
-    
-
-v = VectorStore()
